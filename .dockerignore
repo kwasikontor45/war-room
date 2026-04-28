@@ -1,0 +1,8 @@
+server/node_modules
+server/dist
+server/.env
+output/
+ssh-keys/
+*.pem
+*.md
+.git
