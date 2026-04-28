@@ -1,0 +1,30 @@
+services:
+  war-room-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./output:/app/output
+      - ./ssh-keys:/app/ssh-keys:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD","curl","-f","http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  war-room-client:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./client:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - war-room-server
+    restart: unless-stopped

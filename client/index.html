@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>war-room</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060606;--s1:#0d0d0d;--s2:#111;--s3:#161616;
+  --bd:#1c1c1c;--bd2:#252525;--bd3:#303030;
+  --tx:#e8e8e8;--m1:#888;--m2:#555;--m3:#2e2e2e;
+  --mono:'IBM Plex Mono',monospace;--display:'Syne',sans-serif;
+  --arc:#c8f135;--arc-d:rgba(200,241,53,.05);--arc-b:rgba(200,241,53,.18);
+  --eng:#38bdf8;--eng-d:rgba(56,189,248,.05);--eng-b:rgba(56,189,248,.18);
+  --psy:#b78bfa;--psy-d:rgba(183,139,250,.05);--psy-b:rgba(183,139,250,.18);
+  --wld:#34d399;--wld-d:rgba(52,211,153,.05);--wld-b:rgba(52,211,153,.18);
+  --tool:#f59e0b;--tool-d:rgba(245,158,11,.05);
+  --decision:#e24b4a;
+}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:12px;line-height:1.6;overflow:hidden}
+#app{height:100vh;display:flex;flex-direction:column}
+
+/* ── top bar ── */
+.bar{display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--s1);border-bottom:1px solid var(--bd);flex-shrink:0;user-select:none}
+.bar-logo{font-family:var(--display);font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.bar-logo em{color:var(--arc);font-style:normal}
+.seats{display:flex;gap:12px}
+.seat-tag{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--m2);letter-spacing:.04em;transition:color .2s}
+.seat-tag.live{color:var(--m1)}
+.seat-tag.live .sdot{animation:pulse 1.2s infinite}
+.seat-tag.done .sdot{opacity:.4}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ph-crumb{font-size:10px;color:var(--m3);letter-spacing:.08em;text-transform:uppercase}
+
+/* screens */
+.sc{display:none;flex-direction:column;flex:1;overflow:hidden}
+.sc.on{display:flex}
+
+/* ── S1 brief ── */
+.brief-wrap{display:flex;flex-direction:column;flex:1;padding:20px;gap:14px;overflow-y:auto;max-width:860px;margin:0 auto;width:100%}
+.brief-title{font-family:var(--display);font-size:20px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.brief-title em{color:var(--arc);font-style:normal}
+.brief-sub{font-size:11px;color:var(--m2);line-height:1.7;margin-top:4px;max-width:560px}
+.fi-label{font-size:9px;color:var(--m2);letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px}
+.name-inp{background:var(--s2);border:1px solid var(--bd2);border-radius:5px;color:var(--tx);font-family:var(--mono);font-size:12px;padding:8px 12px;outline:none;width:260px;transition:border-color .15s}
+.name-inp:focus{border-color:var(--arc-b)}
+.name-inp::placeholder{color:var(--m3)}
+.brief-ta{flex:1;min-height:160px;background:var(--s2);border:1px solid var(--bd2);border-radius:6px;color:var(--tx);font-family:var(--mono);font-size:12px;line-height:1.8;padding:14px;resize:vertical;outline:none;transition:border-color .15s}
+.brief-ta:focus{border-color:var(--arc-b)}
+.brief-ta::placeholder{color:var(--m3)}
+.drop-zone{border:1px dashed var(--bd2);border-radius:6px;padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .15s;background:var(--s2)}
+.drop-zone:hover,.drop-zone.over{border-color:var(--arc-b);background:var(--arc-d)}
+.ftags{display:flex;flex-wrap:wrap;gap:4px}
+.ftag{font-size:10px;padding:2px 7px;border-radius:3px;background:var(--s3);border:1px solid var(--bd2);color:var(--m2);display:flex;align-items:center;gap:4px}
+.ftag-rm{cursor:pointer;color:var(--m3);transition:color .1s}
+.ftag-rm:hover{color:var(--decision)}
+.btn{font-family:var(--mono);font-size:11px;border-radius:4px;padding:7px 16px;cursor:pointer;border:none;outline:none;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--arc);color:#060606;font-weight:500;letter-spacing:.03em}
+.btn-p:hover{opacity:.85}
+.btn-p:disabled{opacity:.2;cursor:not-allowed;transform:none}
+.btn-g{background:none;border:1px solid var(--bd2);color:var(--m1)}
+.btn-g:hover{border-color:var(--bd3);color:var(--tx)}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+
+/* ── S2 war-room ── */
+.wr-layout{display:flex;flex:1;overflow:hidden}
+
+/* phase rail */
+.ph-rail{width:105px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column}
+.ph-rail-hd{padding:10px 10px 6px;font-size:9px;color:var(--m3);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+.ph-btn{padding:9px 10px;font-size:10px;color:var(--m3);cursor:pointer;border:none;background:none;text-align:left;border-bottom:1px solid var(--bd);border-left:2px solid transparent;transition:all .15s;display:flex;flex-direction:column;gap:2px;font-family:var(--mono);width:100%}
+.ph-btn:hover{color:var(--m1);background:var(--s2)}
+.ph-btn.active{color:var(--arc);background:var(--s2);border-left-color:var(--arc)}
+.ph-btn.done{color:var(--m2)}
+.ph-btn.running{color:var(--arc);animation:ph-pulse 2s infinite}
+@keyframes ph-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.ph-n{font-size:8px;color:var(--m3);letter-spacing:.06em;text-transform:uppercase}
+.ph-btn.active .ph-n{color:var(--arc)}
+.ph-btn.done .ph-n{color:var(--wld)}
+.ph-rail-footer{margin-top:auto;padding:10px;border-top:1px solid var(--bd)}
+
+/* main content — split: log left, task right */
+.wr-main{flex:1;display:flex;overflow:hidden;min-width:0}
+
+/* log column */
+.log-col{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;border-right:1px solid var(--bd)}
+.log-hdr{display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--bd);background:var(--s1);flex-shrink:0;gap:8px}
+.log-ph-title{font-size:11px;color:var(--m1);letter-spacing:.04em;text-transform:uppercase}
+.log-status{font-size:10px;color:var(--m3);margin-left:auto}
+.log-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:0}
+
+/* seat entry */
+.entry{border-left:2px solid var(--bd2);margin-left:6px;padding:0 0 16px 16px;position:relative}
+.entry::before{content:'';position:absolute;left:-5px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--bd2);border:2px solid var(--bg)}
+.entry.live::before{animation:pulse 1.2s infinite}
+.entry.architect::before{background:var(--arc)}
+.entry.engineer::before{background:var(--eng)}
+.entry.psychologist::before{background:var(--psy)}
+.entry.wildcard::before{background:var(--wld)}
+.entry-seat-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid;margin-bottom:7px}
+.entry-seat-badge.architect{color:var(--arc);border-color:var(--arc-b);background:var(--arc-d)}
+.entry-seat-badge.engineer{color:var(--eng);border-color:var(--eng-b);background:var(--eng-d)}
+.entry-seat-badge.psychologist{color:var(--psy);border-color:var(--psy-b);background:var(--psy-d)}
+.entry-seat-badge.wildcard{color:var(--wld);border-color:var(--wld-b);background:var(--wld-d)}
+.entry-text{font-size:12px;line-height:1.8;color:var(--m1);white-space:pre-wrap;word-break:break-word}
+.entry-text.loading{color:var(--m3);font-style:italic}
+.entry-call{margin-top:8px;padding:6px 10px;border-left:2px solid var(--bd2);font-size:11px;color:var(--m2);font-style:italic}
+.entry-call strong{font-style:normal;color:var(--m1)}
+
+/* tool event */
+.tool-event{
+  margin:6px 0;padding:7px 10px;
+  background:var(--tool-d);border:1px solid rgba(245,158,11,.15);
+  border-radius:4px;font-size:11px;color:var(--tool);
+}
+.tool-event .tool-cmd{color:var(--m1);margin-top:4px;font-size:11px;white-space:pre-wrap;word-break:break-word}
+.tool-event .tool-result{color:var(--m2);margin-top:4px;font-size:10px;white-space:pre-wrap;word-break:break-word;max-height:120px;overflow-y:auto}
+
+/* decision event */
+.decision-event{
+  margin:6px 0;padding:10px 12px;
+  background:rgba(226,75,74,.05);border:1px solid rgba(226,75,74,.25);
+  border-radius:4px;
+}
+.decision-event .dec-label{font-size:9px;color:var(--decision);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.decision-event .dec-q{font-size:12px;color:var(--tx);margin-bottom:6px}
+.decision-event .dec-ctx{font-size:11px;color:var(--m2);margin-bottom:8px}
+.dec-inp{background:var(--bg);border:1px solid rgba(226,75,74,.3);border-radius:4px;color:var(--tx);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;width:100%;margin-bottom:6px;transition:border-color .15s}
+.dec-inp:focus{border-color:var(--decision)}
+
+/* decision bar */
+.dec-bar{padding:10px 14px;border-top:1px solid var(--bd);background:var(--s1);flex-shrink:0;display:flex;gap:7px;align-items:center}
+.dec-bar-label{font-size:9px;color:var(--m3);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.dec-bar-inp{flex:1;background:var(--bg);border:1px solid var(--bd2);border-radius:4px;color:var(--tx);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;transition:border-color .15s}
+.dec-bar-inp:focus{border-color:var(--arc-b)}
+.dec-bar-inp::placeholder{color:var(--m3)}
+
+/* task col */
+.task-col{width:280px;flex-shrink:0;background:var(--s1);display:flex;flex-direction:column;overflow:hidden}
+.task-hdr{padding:8px 12px;border-bottom:1px solid var(--bd);font-size:9px;color:var(--m3);letter-spacing:.09em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.task-body{flex:1;overflow-y:auto;padding:10px}
+.task-inp-row{display:flex;gap:5px;padding:8px 10px;border-top:1px solid var(--bd);flex-shrink:0}
+.task-inp{flex:1;background:var(--bg);border:1px solid var(--bd2);border-radius:4px;color:var(--tx);font-family:var(--mono);font-size:11px;padding:5px 9px;outline:none;transition:border-color .15s}
+.task-inp:focus{border-color:var(--arc-b)}
+.task-inp::placeholder{color:var(--m3)}
+.seat-sel{background:var(--bg);border:1px solid var(--bd2);color:var(--tx);font-family:var(--mono);font-size:10px;padding:4px 6px;border-radius:4px;outline:none;cursor:pointer}
+
+/* task item */
+.task-item{display:flex;align-items:flex-start;gap:7px;padding:7px 8px;border-radius:5px;border:1px solid var(--bd);background:var(--s2);margin-bottom:5px;cursor:pointer;transition:border-color .15s;animation:fu .2s ease}
+.task-item:hover{border-color:var(--bd3)}
+.task-item.running{border-color:var(--arc-b);background:var(--arc-d)}
+.task-item.done{opacity:.4}
+.task-check{width:13px;height:13px;border:1px solid var(--bd2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--arc);margin-top:2px}
+.task-item.done .task-check{background:var(--arc-d);border-color:var(--arc-b)}
+.task-text{font-size:11px;color:var(--m1);flex:1;line-height:1.5;word-break:break-word}
+.task-item.done .task-text{text-decoration:line-through;color:var(--m3)}
+.task-seat{font-size:9px;padding:1px 5px;border-radius:2px;border:1px solid;white-space:nowrap;flex-shrink:0;margin-top:2px}
+
+/* ── S3 output ── */
+.out-wrap{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;max-width:860px;margin:0 auto;width:100%}
+.out-title{font-family:var(--display);font-size:18px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.out-path{background:var(--s2);border:1px solid var(--arc-b);border-radius:6px;padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.out-path-lbl{font-size:9px;color:var(--m3);letter-spacing:.08em;text-transform:uppercase}
+.out-path-val{font-size:12px;color:var(--arc)}
+.out-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6px;overflow:hidden;flex:1}
+.out-preview-hdr{padding:8px 12px;border-bottom:1px solid var(--bd);font-size:9px;color:var(--m2);letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between}
+.out-preview-body{padding:14px;font-size:11px;line-height:1.8;color:var(--m2);white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto}
+.out-actions{display:flex;gap:7px;flex-wrap:wrap}
+.out-bottom{padding:10px 16px;border-top:1px solid var(--bd);background:var(--s1);flex-shrink:0;display:flex;gap:7px}
+
+@keyframes fu{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.spin{display:inline-block;width:8px;height:8px;border:1.5px solid rgba(200,241,53,.1);border-top-color:var(--arc);border-radius:50%;animation:sp .5s linear infinite;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- top bar -->
+  <div class="bar">
+    <span class="bar-logo">war<em>-</em>room</span>
+    <div class="seats" id="seat-row">
+      <div class="seat-tag" id="st-architect"><div class="sdot" style="background:var(--arc)"></div>architect</div>
+      <div class="seat-tag" id="st-engineer"><div class="sdot" style="background:var(--eng)"></div>engineer</div>
+      <div class="seat-tag" id="st-psychologist"><div class="sdot" style="background:var(--psy)"></div>psychologist</div>
+      <div class="seat-tag" id="st-wildcard"><div class="sdot" style="background:var(--wld)"></div>wild-card</div>
+    </div>
+    <div class="bar-right">
+      <span class="ph-crumb" id="ph-crumb">brief</span>
+    </div>
+  </div>
+
+  <!-- S1: brief -->
+  <div class="sc on" id="sc-1">
+    <div class="brief-wrap">
+      <div>
+        <div class="brief-title">the <em>brief</em></div>
+        <div class="brief-sub" style="margin-top:5px">four seats. five phases. they plan, argue, and execute — with real tools. you decide.</div>
+      </div>
+      <div>
+        <div class="fi-label">project name</div>
+        <input class="name-inp" id="proj-name" placeholder="shipyard, conductor, etc.">
+      </div>
+      <div style="display:flex;flex-direction:column;flex:1;gap:5px">
+        <div class="fi-label">the brief</div>
+        <textarea class="brief-ta" id="brief-ta" placeholder="what are you building? goals, constraints, stack, users, scale."></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="drop-zone" id="dz" onclick="document.getElementById('fi').click()" ondragover="dzo(event)" ondragleave="dzl()" ondrop="dzd(event)">
+          <div style="font-size:16px;color:var(--m3)">⊕</div>
+          <div><div style="font-size:11px;color:var(--m2)">attach files</div><div style="font-size:10px;color:var(--m3);margin-top:1px">code · docs · zip · pdf · images</div></div>
+        </div>
+        <input type="file" id="fi" style="display:none" multiple onchange="handleFiles(this.files)">
+        <div class="ftags" id="ftags"></div>
+      </div>
+      <div class="row">
+        <button class="btn btn-p" onclick="convene()">convene the war-room →</button>
+        <button class="btn btn-g" onclick="loadSample()">load sample</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2: war-room -->
+  <div class="sc" id="sc-2">
+    <div class="wr-layout">
+
+      <!-- phase rail -->
+      <div class="ph-rail">
+        <div class="ph-rail-hd">phases</div>
+        <button class="ph-btn active" id="phb-0" onclick="showPhase(0)"><span class="ph-n">01</span>propose</button>
+        <button class="ph-btn" id="phb-1" onclick="showPhase(1)"><span class="ph-n">02</span>architect</button>
+        <button class="ph-btn" id="phb-2" onclick="showPhase(2)"><span class="ph-n">03</span>implement</button>
+        <button class="ph-btn" id="phb-3" onclick="showPhase(3)"><span class="ph-n">04</span>review</button>
+        <button class="ph-btn" id="phb-4" onclick="showPhase(4)"><span class="ph-n">05</span>ship</button>
+        <div class="ph-rail-footer">
+          <button class="btn btn-p" id="btn-export" onclick="goOutput()" disabled style="opacity:.2;cursor:not-allowed;width:100%;padding:6px 8px;font-size:10px">export →</button>
+        </div>
+      </div>
+
+      <!-- main -->
+      <div class="wr-main">
+        <!-- log -->
+        <div class="log-col">
+          <div class="log-hdr">
+            <span class="log-ph-title" id="log-ph-title">01 — propose</span>
+            <span class="log-status" id="log-status">standing by</span>
+          </div>
+          <div class="log-body" id="log-body"></div>
+          <div class="dec-bar">
+            <span class="dec-bar-label">decision</span>
+            <input class="dec-bar-inp" id="dec-inp" placeholder="record your call for this phase…" onkeydown="if(event.key==='Enter')recordDecision()">
+            <button class="btn btn-g" onclick="recordDecision()" style="font-size:10px;padding:6px 12px">record</button>
+          </div>
+        </div>
+
+        <!-- task column -->
+        <div class="task-col">
+          <div class="task-hdr">
+            <span>ad-hoc tasks</span>
+            <span id="task-count" style="color:var(--m3)">0</span>
+          </div>
+          <div class="task-body" id="task-body"></div>
+          <div class="task-inp-row">
+            <input class="task-inp" id="task-inp" placeholder="assign a task…" onkeydown="if(event.key==='Enter')addTask()">
+            <select class="seat-sel" id="task-seat-sel">
+              <option value="architect">arc</option>
+              <option value="engineer">eng</option>
+              <option value="psychologist">psy</option>
+              <option value="wildcard">wld</option>
+            </select>
+            <button class="btn btn-p" onclick="addTask()" style="padding:5px 10px">→</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S3: output -->
+  <div class="sc" id="sc-3">
+    <div class="out-wrap">
+      <div class="out-title">war-room log</div>
+      <div style="font-size:10px;color:var(--m2)" id="out-date"></div>
+      <div class="out-path" id="out-path" style="display:none">
+        <div class="out-path-lbl">written to disk — git initialized</div>
+        <div class="out-path-val" id="out-path-val"></div>
+        <div style="font-size:10px;color:var(--m2);margin-top:2px">add a remote and push.</div>
+      </div>
+      <div class="out-actions">
+        <button class="btn btn-p" onclick="copyLog()">copy to clipboard</button>
+        <button class="btn btn-g" onclick="go(2)">← back</button>
+        <button class="btn btn-g" onclick="go(1)">new brief</button>
+      </div>
+      <div class="out-preview">
+        <div class="out-preview-hdr"><span>README.md</span><span id="out-wc"></span></div>
+        <div class="out-preview-body" id="out-preview"></div>
+      </div>
+    </div>
+    <div class="out-bottom">
+      <button class="btn btn-p" onclick="copyLog()">copy log</button>
+      <button class="btn btn-g" onclick="go(2)">← back to war-room</button>
+      <button class="btn btn-g" style="margin-left:auto" onclick="go(1)">new brief</button>
+    </div>
+  </div>
+
+</div>
+<script>
+const API = window.location.port === '3000' ? '' : 'http://localhost:3000'
+// ── constants ─────────────────────────────────
+const PHASES = [
+  {id:'propose',   n:'01', label:'propose'},
+  {id:'architect', n:'02', label:'architect'},
+  {id:'implement', n:'03', label:'implement'},
+  {id:'review',    n:'04', label:'review'},
+  {id:'ship',      n:'05', label:'ship'},
+]
+const SEATS = ['architect','engineer','psychologist','wildcard']
+const SEAT_LABELS = {architect:'ARCHITECT',engineer:'ENGINEER',psychologist:'PSYCHOLOGIST',wildcard:'WILD-CARD'}
+const SEAT_COLORS = {architect:'arc',engineer:'eng',psychologist:'psy',wildcard:'wld'}
+
+// ── state ─────────────────────────────────────
+let sessionId = null, brief = '', projectName = ''
+let attachedFiles = [], tasks = [], taskId = 0
+let activePh = 0, phaseDone = new Set()
+let outputs = {}, decisions = {}
+// per-phase per-seat live buffers
+let liveText = {}, liveTools = {}
+
+// ── nav ───────────────────────────────────────
+function go(n) {
+  document.querySelectorAll('.sc').forEach(s => s.classList.remove('on'))
+  document.getElementById('sc-' + n).classList.add('on')
+  document.getElementById('ph-crumb').textContent = ['brief','war-room','output'][n-1] || ''
+}
+
+// ── file handling ─────────────────────────────
+function dzo(e) { e.preventDefault(); document.getElementById('dz').classList.add('over') }
+function dzl() { document.getElementById('dz').classList.remove('over') }
+function dzd(e) { e.preventDefault(); dzl(); handleFiles(e.dataTransfer.files) }
+async function handleFiles(fl) {
+  for (const f of fl) {
+    const fd = new FormData(); fd.append('file', f)
+    try {
+      const r = await fetch(`${API}/api/upload', { method:'POST', body:fd })
+      const d = await r.json()
+      attachedFiles.push(d); addFtag(d.name, attachedFiles.length-1)
+    } catch {
+      if (/\.(md|ts|js|py|json|txt|yaml|sh|go|rs|rb|html|css|sql)$/i.test(f.name)) {
+        const c = await f.text()
+        attachedFiles.push({ type:'text', name:f.name, content:c })
+        addFtag(f.name, attachedFiles.length-1)
+      }
+    }
+  }
+}
+function addFtag(name, idx) {
+  const t = document.createElement('span'); t.className='ftag'; t.id='ft-'+idx
+  t.innerHTML = `<span>${name}</span><span class="ftag-rm" onclick="rmFile(${idx})">✕</span>`
+  document.getElementById('ftags').appendChild(t)
+}
+function rmFile(idx) { attachedFiles[idx]=null; document.getElementById('ft-'+idx)?.remove() }
+function buildContext() {
+  const files = attachedFiles.filter(Boolean)
+  if (!files.length) return ''
+  return '\n\n--- attached files ---\n' + files.map(f => {
+    if (f.type==='text') return `[${f.name}]\n${f.content}`
+    if (f.type==='zip') return `[${f.name}]\n` + f.files.map(ff => `[${ff.name}]\n${ff.content}`).join('\n')
+    return `[${f.name} — ${f.type}]`
+  }).join('\n\n')
+}
+
+function loadSample() {
+  document.getElementById('proj-name').value = 'shipyard'
+  document.getElementById('brief-ta').value = `Shipyard: self-hosted devops platform for small teams (2–10).\n\nDeploy any docker container from a git push. Auto SSL, reverse proxy, env vars, team access, deploy logs, health monitoring, one-command rollback.\n\nRuns on a single Linux VM (2–4 vCPU, 4–8GB). No cloud lock-in. Install in under 5 minutes. MIT license.\n\nTarget: indie hackers, small startups, teams who know Docker but don't want to think about infra.`
+}
+
+// ── convene ───────────────────────────────────
+async function convene() {
+  brief = document.getElementById('brief-ta').value.trim() + buildContext()
+  projectName = document.getElementById('proj-name').value.trim() || 'war-room'
+  if (!brief) return
+
+  outputs = {}; decisions = {}; phaseDone = new Set()
+  PHASES.forEach(ph => { outputs[ph.id] = {}; liveText[ph.id] = {}; liveTools[ph.id] = {} })
+
+  // create session
+  const r = await fetch(`${API}/api/session', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ projectName, brief })
+  })
+  const d = await r.json()
+  sessionId = d.sessionId
+
+  go(2)
+  showPhase(0)
+  runPhase(0)
+}
+
+// ── phase rendering ───────────────────────────
+function showPhase(i) {
+  activePh = i
+  const ph = PHASES[i]
+  document.querySelectorAll('.ph-btn').forEach((b,j) => b.classList.toggle('active', j===i))
+  document.getElementById('log-ph-title').textContent = `${ph.n} — ${ph.label}`
+  renderLog(i)
+}
+
+function renderLog(phIdx) {
+  const ph = PHASES[phIdx]
+  const log = document.getElementById('log-body')
+  log.innerHTML = ''
+
+  SEATS.forEach(seat => {
+    const out = outputs[ph.id]?.[seat]
+    const live = liveText[ph.id]?.[seat]
+    const tools = liveTools[ph.id]?.[seat] || []
+    const color = SEAT_COLORS[seat]
+
+    const entry = document.createElement('div')
+    entry.className = 'entry ' + (out ? seat : (live ? seat + ' live' : ''))
+    entry.id = `e-${ph.id}-${seat}`
+
+    const badge = document.createElement('div')
+    badge.className = `entry-seat-badge ${seat}`
+    badge.textContent = SEAT_LABELS[seat]
+    entry.appendChild(badge)
+
+    // tool events
+    tools.forEach(t => {
+      const te = document.createElement('div'); te.className = 'tool-event'
+      te.innerHTML = `<span>⚙ ${t.tool}</span><div class="tool-cmd">${t.reason||''}</div>${t.result ? `<div class="tool-result">${escHtml(t.result)}</div>` : ''}`
+      entry.appendChild(te)
+    })
+
+    const text = document.createElement('div')
+    const displayText = out?.text || live || ''
+    if (!displayText) {
+      text.className = 'entry-text loading'
+      text.innerHTML = phaseDone.has(phIdx) ? '' : '<span class="spin"></span>standing by…'
+    } else {
+      text.className = 'entry-text'; text.textContent = displayText
+    }
+    text.id = `et-${ph.id}-${seat}`
+    entry.appendChild(text)
+
+    if (out?.call) {
+      const c = document.createElement('div'); c.className='entry-call'
+      c.innerHTML = `<strong>CALL:</strong> ${escHtml(out.call)}`
+      entry.appendChild(c)
+    }
+
+    log.appendChild(entry)
+  })
+
+  if (decisions[ph.id]) {
+    const dec = document.createElement('div')
+    dec.style.cssText = 'margin-top:12px;padding:9px 12px;background:var(--s2);border:1px solid var(--bd2);border-radius:5px;font-size:11px;color:var(--m1)'
+    dec.innerHTML = `<span style="font-size:9px;color:var(--m3);text-transform:uppercase;letter-spacing:.07em">decision</span><br>${escHtml(decisions[ph.id])}`
+    log.appendChild(dec)
+  }
+
+  log.scrollTop = log.scrollHeight
+}
+
+function setSeatLive(seat, live) {
+  const el = document.getElementById('st-' + seat)
+  if (el) el.classList.toggle('live', live)
+}
+
+// ── run a full phase — all 4 seats in parallel ─
+async function runPhase(phIdx) {
+  const ph = PHASES[phIdx]
+  document.getElementById(`phb-${phIdx}`)?.classList.add('running')
+  document.getElementById('log-status').textContent = 'agents running…'
+  SEATS.forEach(s => { setSeatLive(s, true); liveText[ph.id][s] = ''; liveTools[ph.id][s] = [] })
+  if (activePh === phIdx) renderLog(phIdx)
+
+  await Promise.all(SEATS.map(seat => streamAgent(ph, seat, phIdx)))
+
+  phaseDone.add(phIdx)
+  const phBtn = document.getElementById(`phb-${phIdx}`)
+  phBtn?.classList.remove('running'); phBtn?.classList.add('done')
+  document.getElementById('log-status').textContent = 'phase complete'
+
+  if (phIdx < PHASES.length - 1) {
+    runPhase(phIdx + 1)
+  } else {
+    document.getElementById('log-status').textContent = 'all phases complete'
+    const btn = document.getElementById('btn-export')
+    if (btn) { btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer' }
+  }
+}
+
+async function streamAgent(ph, seat, phIdx) {
+  return new Promise(resolve => {
+    const url = `${API}/api/run?sessionId=${sessionId}&phase=${ph.id}&seat=${seat}`
+    const es = new EventSource(url)
+
+    es.addEventListener('text', e => {
+      const d = JSON.parse(e.data)
+      liveText[ph.id][seat] = (liveText[ph.id][seat] || '') + d.text
+      if (activePh === phIdx) {
+        const el = document.getElementById(`et-${ph.id}-${seat}`)
+        if (el) { el.className='entry-text'; el.textContent = liveText[ph.id][seat] }
+        document.getElementById('log-body').scrollTop = 99999
+      }
+    })
+
+    es.addEventListener('tool-start', e => {
+      const d = JSON.parse(e.data)
+      if (!liveTools[ph.id][seat]) liveTools[ph.id][seat] = []
+      liveTools[ph.id][seat].push({ tool: d.tool, reason: d.input?.reason || '', result: null })
+      if (activePh === phIdx) renderLog(phIdx)
+    })
+
+    es.addEventListener('tool-done', e => {
+      const d = JSON.parse(e.data)
+      const arr = liveTools[ph.id][seat] || []
+      const last = arr[arr.length - 1]
+      if (last && last.tool === d.tool) last.result = d.result
+      if (activePh === phIdx) renderLog(phIdx)
+    })
+
+    es.addEventListener('decision', e => {
+      const d = JSON.parse(e.data)
+      showDecisionPrompt(seat, d, phIdx)
+    })
+
+    es.addEventListener('done', e => {
+      const d = JSON.parse(e.data)
+      setSeatLive(seat, false)
+      const callMatch = (d.text||'').match(/CALL:\s*(.+)/i)
+      const callText = callMatch ? callMatch[1].trim() : ''
+      const bodyText = (d.text||'').replace(/CALL:\s*.+/i, '').trim()
+      if (!outputs[ph.id]) outputs[ph.id] = {}
+      outputs[ph.id][seat] = { text: bodyText, call: callText }
+      if (activePh === phIdx) renderLog(phIdx)
+      es.close(); resolve(null)
+    })
+
+    es.addEventListener('error', () => {
+      setSeatLive(seat, false)
+      es.close(); resolve(null)
+    })
+
+    // timeout safety
+    setTimeout(() => { es.close(); resolve(null) }, 5 * 60 * 1000)
+  })
+}
+
+// ── decision prompt ───────────────────────────
+function showDecisionPrompt(seat, data, phIdx) {
+  const log = document.getElementById('log-body')
+  const ph = PHASES[phIdx]
+
+  const dec = document.createElement('div'); dec.className='decision-event fi'; dec.id=`dec-${seat}-${phIdx}`
+  dec.innerHTML = `
+    <div class="dec-label">⚑ decision required — ${SEAT_LABELS[seat]}</div>
+    <div class="dec-q">${escHtml(data.question)}</div>
+    <div class="dec-ctx">${escHtml(data.context||'')}</div>
+    ${(data.options||[]).map(o => `<div style="font-size:10px;color:var(--m2);margin-bottom:2px">→ ${escHtml(o)}</div>`).join('')}
+    <input class="dec-inp" id="dec-ans-${seat}" placeholder="your decision…">
+    <button class="btn btn-p" onclick="answerDecision('${seat}','${phIdx}')" style="font-size:10px;padding:5px 12px">send decision →</button>
+  `
+  log.appendChild(dec)
+  log.scrollTop = 99999
+}
+
+async function answerDecision(seat, phIdx) {
+  const inp = document.getElementById(`dec-ans-${seat}`)
+  const answer = inp?.value.trim(); if (!answer) return
+  const decEl = document.getElementById(`dec-${seat}-${phIdx}`)
+  if (decEl) decEl.style.opacity = '.4'
+
+  await fetch(`${API}/api/decision', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId, seat, answer })
+  })
+}
+
+// ── decision bar ──────────────────────────────
+function recordDecision() {
+  const inp = document.getElementById('dec-inp')
+  const val = inp.value.trim(); if (!val) return
+  decisions[PHASES[activePh].id] = val
+  inp.value = ''
+  renderLog(activePh)
+}
+
+// ── ad-hoc tasks ──────────────────────────────
+async function addTask() {
+  const inp = document.getElementById('task-inp')
+  const text = inp.value.trim(); if (!text) return
+  const seat = document.getElementById('task-seat-sel').value
+  const id = ++taskId
+  inp.value = ''
+  tasks.push({ id, text, seat, status:'pending' })
+  renderTasks()
+  runTask(id, text, seat)
+}
+
+async function runTask(id, text, seat) {
+  setTaskStatus(id, 'running')
+  const es = new EventSource(`${API}/api/run?sessionId=${sessionId}&phase=task&seat=${seat}`)
+  // POST task via fetch, stream response via SSE would need refactor
+  // simplified: use fetch and show result
+  const r = await fetch(`${API}/api/task', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId, seat, task: text })
+  })
+  setTaskStatus(id, 'done')
+}
+
+function setTaskStatus(id, status) {
+  const t = tasks.find(t => t.id===id)
+  if (t) t.status = status
+  renderTasks()
+}
+
+function renderTasks() {
+  const body = document.getElementById('task-body')
+  const COLORS = {architect:'arc',engineer:'eng',psychologist:'psy',wildcard:'wld'}
+  body.innerHTML = ''
+  tasks.forEach(t => {
+    const c = COLORS[t.seat]
+    const el = document.createElement('div')
+    el.className = 'task-item ' + (t.status==='done'?'done':t.status==='running'?'running':'')
+    el.innerHTML = `
+      <div class="task-check">${t.status==='done'?'✓':''}</div>
+      <div class="task-text">${escHtml(t.text)}</div>
+      <div class="task-seat" style="color:var(--${c});border-color:var(--${c}-b);background:var(--${c}-d)">${t.seat.slice(0,3)}</div>
+    `
+    body.appendChild(el)
+  })
+  document.getElementById('task-count').textContent = tasks.length
+}
+
+// ── output ────────────────────────────────────
+async function goOutput() {
+  go(3)
+  document.getElementById('out-date').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+  const log = buildLog()
+  document.getElementById('out-preview').textContent = log
+  document.getElementById('out-wc').textContent = `~${log.split(/\s+/).length} words`
+
+  try {
+    const r = await fetch(`${API}/api/output', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId })
+    })
+    if (r.ok) {
+      const d = await r.json()
+      document.getElementById('out-path').style.display = 'flex'
+      document.getElementById('out-path-val').textContent = d.outDir
+    }
+  } catch {}
+}
+
+function buildLog() {
+  const lines = [
+    `# war-room log — ${projectName}`,
+    `_${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}_`,
+    '','---','','## brief','',brief,'','---','',
+  ]
+  PHASES.forEach(ph => {
+    lines.push(`## ${ph.n} — ${ph.label}`, '')
+    SEATS.forEach(seat => {
+      const out = outputs[ph.id]?.[seat]; if(!out) return
+      lines.push(`**${SEAT_LABELS[seat]}**`, '', out.text, '')
+      if (out.call) lines.push(`> CALL: ${out.call}`, '')
+    })
+    if (decisions[ph.id]) lines.push(`> **DECISION:** ${decisions[ph.id]}`, '')
+    lines.push('---', '')
+  })
+  return lines.join('\n')
+}
+
+function copyLog() {
+  navigator.clipboard.writeText(buildLog()).then(() => {
+    const btn = event.target; btn.textContent='copied ✓'
+    setTimeout(()=>btn.textContent='copy to clipboard',2000)
+  })
+}
+
+function escHtml(s='') {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+</script>
+</body>
+</html>
