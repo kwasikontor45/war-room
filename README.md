@@ -16,9 +16,18 @@ Four-seat agentic devops system. Drop a brief — architect, engineer, psycholog
 
 ## local setup
 
+**Quick start with the manager script:**
+```bash
+git clone git@github.com:kwasikontor45/war-room.git ~/war-room
+cd ~/war-room
+./war-room.sh install
+./war-room.sh start
+```
+
+**Or manual setup:**
 ```bash
 git clone git@github.com:kwasikontor45/war-room.git
-cd war-room/war-room-v4
+cd war-room
 npm install --prefix server
 cp server/.env.example server/.env
 ```
@@ -35,19 +44,24 @@ Any seat without a key goes offline gracefully — you can run with just one.
 
 **Start the server:**
 ```bash
-cd server
-npm run dev       # runs at localhost:3000
+cd server && npm run dev       # runs at localhost:3000
+# or use the manager: ./war-room.sh start
 ```
 
 **Use the standalone UI:**
 Open `client/index.html` directly in your browser. Full four-seat war-room with SSE streaming.
 
 **Use via kwasikontor.dev locally:**
-In `~/war-site/kwasikontor-dev`, create `.env.local`:
+In `~/kwasikontor-dev` (or `~/war-site/kwasikontor-dev`), create `.env.local`:
 ```
 VITE_WAR_ROOM_API=http://localhost:3000/api
 ```
 Then `npm run dev` in the website project. Type `warroom` in the terminal.
+
+> **Directory clarity:**
+> - `~/war-room/` → **this repo** — the server & local client
+> - `~/kwasikontor-dev/` → **your terminal website** — connects to the war-room API
+> - `~/war-site/` → **frontend components** — copies of `App.jsx` and `WarRoom.jsx` (not a git repo)
 
 ---
 
@@ -105,7 +119,7 @@ Cheapest: Hetzner CX11 (~$4/mo), DigitalOcean Basic ($6/mo).
 ```bash
 # on the VPS — Ubuntu 24.04
 git clone git@github.com:kwasikontor45/war-room.git
-cd war-room/war-room-v4/server
+cd war-room/server
 npm install
 cp .env.example .env   # fill in keys
 npm run dev            # or use pm2 / systemd for persistence
@@ -132,7 +146,7 @@ Render's free tier spins down after 15 min of inactivity — first request takes
 
 1. Connect the `war-room` GitHub repo at render.com
 2. New Web Service → Node
-   - Build: `cd war-room-v4/server && npm install`
+   - Build: `cd server && npm install`
    - Start: `npx tsx src/index.ts`
 3. Add environment variables in the Render dashboard
 4. Optionally set a custom domain
@@ -188,9 +202,9 @@ To change a scope: edit `SEAT_SCOPES` in `server/src/tools/executor.ts`.
 ## update
 
 ```bash
-cd war-room/war-room-v4
+cd ~/war-room
 git pull
-cd server && npm install
+./war-room.sh update   # or manually: cd server && npm install
 # local: npm run dev
 # fly:   fly deploy
 ```
