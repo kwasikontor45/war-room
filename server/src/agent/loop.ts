@@ -50,8 +50,9 @@ export async function runAgent(
     try {
       response = await callModel(model, messages, system)
     } catch (e: any) {
-      emit({ type: 'error', seat, data: { message: e.message } })
-      return fullText || 'error: ' + e.message
+      const msg = `[${seat} / ${model}] ${e.message}`
+      emit({ type: 'error', seat, data: { message: msg } })
+      return fullText || 'error: ' + msg
     }
 
     if (response.text) {
@@ -189,7 +190,7 @@ async function callOpenAICompat(messages: any[], system: string, url: string, mo
     body: JSON.stringify({ model, max_tokens: 4096, messages: oaiMessages, tools: functions.map(f => ({ type: 'function', function: f })) }),
   })
   const d = await res.json() as any
-  if (!res.ok) throw new Error(d.error?.message || `${model} error`)
+  if (!res.ok) throw new Error(d.error?.message || `${model} api error`)
 
   const msg = d.choices?.[0]?.message
   const text = msg?.content || ''
@@ -222,7 +223,7 @@ async function callGemini(messages: any[], system: string) {
     body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents, tools, generationConfig: { maxOutputTokens: 4096 } }),
   })
   const d = await res.json() as any
-  if (!res.ok) throw new Error(d.error?.message || 'gemini error')
+  if (!res.ok) throw new Error(d.error?.message || 'gemini api error')
 
   const parts = d.candidates?.[0]?.content?.parts || []
   const text = parts.filter((p: any) => p.text).map((p: any) => p.text).join('') || ''

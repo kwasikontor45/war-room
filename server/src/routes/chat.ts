@@ -24,7 +24,7 @@ export async function chatRoute(app: FastifyInstance) {
       const reply_text = await callModel(model, messages, system)
       return reply.send({ reply: reply_text })
     } catch (e: any) {
-      return reply.status(500).send({ error: e.message })
+      return reply.status(500).send({ error: `[${seat} / ${model}] ${e.message}` })
     }
   })
 }
