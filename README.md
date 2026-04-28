@@ -95,7 +95,7 @@ export PATH="$HOME/.fly/bin:$PATH"
 
 fly auth login
 
-# from war-room-v4/
+# from repo root
 fly launch --no-deploy --copy-config   # creates the app, keep existing fly.toml
 fly secrets set \
   ANTHROPIC_API_KEY=sk-ant-... \
