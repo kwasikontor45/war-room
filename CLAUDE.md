@@ -35,6 +35,7 @@ war-room-v4/
 │   │   └── executor.ts       ← scoped bash, ssh, file, http
 │   └── routes/
 │       ├── agent.ts          ← SSE stream, session, decision, task
+│       ├── chat.ts           ← simple POST /api/chat used by kwasikontor.dev
 │       ├── output.ts         ← write log + git init
 │       └── misc.ts           ← health (with scope info), upload
 ├── client/index.html
@@ -78,6 +79,21 @@ ssh uses `-o BatchMode=yes` — no password prompts. key-based auth only.
   }
 }
 ```
+
+## live deployment
+
+deployed on fly.io free tier: `https://war-room-kwasikontor.fly.dev`
+
+```bash
+fly deploy                        # redeploy after code changes
+fly secrets set KEY=val           # add/update env vars (restarts machine)
+fly logs -a war-room-kwasikontor  # tail logs
+fly status -a war-room-kwasikontor
+```
+
+dockerfile uses `tsx src/index.ts` directly — no compile step. `fly.toml` and `Dockerfile` are in the repo root.
+
+kwasikontor.dev (netlify) points at fly via `.env.production` → `VITE_WAR_ROOM_API=https://war-room-kwasikontor.fly.dev/api`. to switch servers: update that file and push.
 
 ## the principle
 

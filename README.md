@@ -10,13 +10,15 @@ Four-seat agentic devops system. Drop a brief — architect, engineer, psycholog
 
 **Phases:** propose → architect → implement → review → ship
 
+**Live server:** `https://war-room-kwasikontor.fly.dev`
+
 ---
 
 ## local setup
 
 ```bash
 git clone git@github.com:kwasikontor45/war-room.git
-cd war-room
+cd war-room/war-room-v4
 npm install --prefix server
 cp server/.env.example server/.env
 ```
@@ -37,10 +39,10 @@ cd server
 npm run dev       # runs at localhost:3000
 ```
 
-**Use the standalone UI:**  
+**Use the standalone UI:**
 Open `client/index.html` directly in your browser. Full four-seat war-room with SSE streaming.
 
-**Use via kwasikontor.dev locally:**  
+**Use via kwasikontor.dev locally:**
 In `~/war-site/kwasikontor-dev`, create `.env.local`:
 ```
 VITE_WAR_ROOM_API=http://localhost:3000/api
@@ -66,44 +68,54 @@ Then `npm run dev` in the website project. Type `warroom` in the terminal.
 
 ## production deployment
 
-Requires a server with Node 18+ and optionally Docker.
+### fly.io (live — free tier)
 
-### option 1 — fly.io (free tier)
+Already deployed at `https://war-room-kwasikontor.fly.dev`.
 
-Fly.io's free tier covers a lightweight Node app like this.
+To redeploy from scratch on a new account:
 
 ```bash
 # install flyctl
 curl -L https://fly.io/install.sh | sh
+export PATH="$HOME/.fly/bin:$PATH"
 
-# from the war-room directory
-fly launch        # follow prompts — use existing Dockerfile
-fly secrets set ANTHROPIC_API_KEY=sk-ant-... OPENAI_API_KEY=... MOONSHOT_API_KEY=... GOOGLE_API_KEY=...
+fly auth login
+
+# from war-room-v4/
+fly launch --no-deploy --copy-config   # creates the app, keep existing fly.toml
+fly secrets set \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  OPENAI_API_KEY=sk-proj-... \
+  MOONSHOT_API_KEY=sk-... \
+  GOOGLE_API_KEY=AIza...
 fly deploy
 ```
 
-Point `warroom.kwasikontor.dev` CNAME at the fly.dev URL it gives you.
+The Dockerfile uses `tsx` to run TypeScript directly — no compile step. The `fly.toml` is already in the repo.
 
-### option 2 — VPS (DigitalOcean / Hetzner / Vultr)
+**To update after code changes:**
+```bash
+fly deploy
+```
+
+### VPS (DigitalOcean / Hetzner / Vultr)
 
 Cheapest: Hetzner CX11 (~$4/mo), DigitalOcean Basic ($6/mo).
 
 ```bash
 # on the VPS — Ubuntu 24.04
 git clone git@github.com:kwasikontor45/war-room.git
-cd war-room
-bash install.sh     # interactive: enter keys, starts via docker compose
+cd war-room/war-room-v4/server
+npm install
+cp .env.example .env   # fill in keys
+npm run dev            # or use pm2 / systemd for persistence
 ```
 
-Then set up nginx + Certbot for SSL on `warroom.kwasikontor.dev`:
-
-```bash
-sudo apt install nginx certbot python3-certbot-nginx -y
-
-# /etc/nginx/sites-available/warroom
+For SSL, put nginx in front:
+```nginx
 server {
     listen 80;
-    server_name warroom.kwasikontor.dev;
+    server_name your-domain.com;
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -111,38 +123,35 @@ server {
         proxy_buffering off;
     }
 }
-
-sudo ln -s /etc/nginx/sites-available/warroom /etc/nginx/sites-enabled/
-sudo certbot --nginx -d warroom.kwasikontor.dev
-sudo systemctl reload nginx
 ```
+Then `sudo certbot --nginx -d your-domain.com`.
 
-### option 3 — render.com (free tier, cold starts)
+### render.com (free tier, cold starts)
 
-Render's free tier spins down after 15 min of inactivity — first request after idle takes ~30s to wake up. Fine for a portfolio demo.
+Render's free tier spins down after 15 min of inactivity — first request takes ~30s to wake.
 
 1. Connect the `war-room` GitHub repo at render.com
-2. New Web Service → Node → Build: `cd server && npm install` → Start: `cd server && npm start`
+2. New Web Service → Node
+   - Build: `cd war-room-v4/server && npm install`
+   - Start: `npx tsx src/index.ts`
 3. Add environment variables in the Render dashboard
-4. Set custom domain: `warroom.kwasikontor.dev`
+4. Optionally set a custom domain
 
 ---
 
 ## connecting to kwasikontor.dev
 
-Once the server is deployed, build the website with the server URL:
-
-```bash
-cd ~/war-site/kwasikontor-dev
-VITE_WAR_ROOM_API=https://warroom.kwasikontor.dev/api npm run build
+The website (`github.com/kwasikontor45/kwasikontor-dev`, hosted on Netlify) already points at the live Fly server via `.env.production`:
+```
+VITE_WAR_ROOM_API=https://war-room-kwasikontor.fly.dev/api
 ```
 
-Or set it permanently in `.env.production`:
-```
-VITE_WAR_ROOM_API=https://warroom.kwasikontor.dev/api
-```
+If you redeploy the server at a different URL, update `.env.production` in the website repo and push — Netlify rebuilds automatically.
 
-Then push — GitHub Actions deploys the build to GitHub Pages.
+For local dev of the website against a local server, create `.env.local` (gitignored):
+```
+VITE_WAR_ROOM_API=http://localhost:3000/api
+```
 
 ---
 
@@ -179,8 +188,9 @@ To change a scope: edit `SEAT_SCOPES` in `server/src/tools/executor.ts`.
 ## update
 
 ```bash
-cd war-room
+cd war-room/war-room-v4
 git pull
 cd server && npm install
-# restart: npm run dev (local) or fly deploy / docker compose up -d (prod)
+# local: npm run dev
+# fly:   fly deploy
 ```
